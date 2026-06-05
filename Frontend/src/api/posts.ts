@@ -9,6 +9,19 @@ export const postsApi = {
     return unwrap<Post>(api.get(`/api/posts/${id}`));
   },
   create(payload: CreatePostPayload) {
-    return unwrap<CreatePostResponse>(api.post('/api/posts', payload));
+    const body = new FormData();
+
+    body.append('title', payload.title);
+    if (payload.description) body.append('description', payload.description);
+    if (payload.price) body.append('price', payload.price);
+    if (payload.oldPrice) body.append('oldPrice', payload.oldPrice);
+    if (payload.link) body.append('link', payload.link);
+    if (payload.tags) body.append('tags', payload.tags);
+    if (payload.telegramInviteLink) body.append('telegramInviteLink', payload.telegramInviteLink);
+    if (payload.whatsappInviteLink) body.append('whatsappInviteLink', payload.whatsappInviteLink);
+    if (payload.image) body.append('image', payload.image);
+    body.append('channels', JSON.stringify(payload.channels));
+
+    return unwrap<CreatePostResponse>(api.post('/api/posts', body));
   },
 };

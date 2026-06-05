@@ -148,6 +148,10 @@ Os convites sao aplicados de forma cruzada:
 - Canal `WHATSAPP`: inclui no texto gerado o convite do Telegram.
 - Canais `TELEGRAM` e `WHATSAPP`: cada canal divulga o convite do outro.
 
+Tambem e possivel anexar uma imagem no post. O backend salva o arquivo em `uploads/posts`
+e, quando o canal `TELEGRAM` for selecionado, envia a imagem como foto com legenda. O
+link de WhatsApp continua sendo apenas texto, pois `wa.me` nao anexa arquivos automaticamente.
+
 ## Scripts disponiveis
 
 | Script | Descricao |

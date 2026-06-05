@@ -1,4 +1,5 @@
 import "dotenv/config";
+import path from "node:path";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -66,6 +67,7 @@ app.use(
 // Limita o body a 1MB para evitar ataques de payload gigante
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 // ── Rotas ─────────────────────────────────────────────────────────────────────
 

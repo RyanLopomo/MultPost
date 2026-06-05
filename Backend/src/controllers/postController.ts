@@ -14,9 +14,17 @@ const createPostSchema = z
     tags: z.string().max(200).optional(),
     telegramInviteLink: z.string().url("Link do Telegram invalido.").optional().or(z.literal("")),
     whatsappInviteLink: z.string().url("Link do WhatsApp invalido.").optional().or(z.literal("")),
-    channels: z
-      .array(z.enum(["TELEGRAM", "WHATSAPP"]))
-      .min(1, "Selecione ao menos um canal."),
+    channels: z.preprocess((value) => {
+      if (typeof value === "string") {
+        try {
+          return JSON.parse(value);
+        } catch {
+          return value;
+        }
+      }
+
+      return value;
+    }, z.array(z.enum(["TELEGRAM", "WHATSAPP"])).min(1, "Selecione ao menos um canal.")),
   })
   .superRefine((data, ctx) => {
     if (data.channels.includes("TELEGRAM") && !data.whatsappInviteLink) {
@@ -40,6 +48,7 @@ export async function createPost(req: Request, res: Response, next: NextFunction
   try {
     const data = createPostSchema.parse(req.body);
     const authorId = req.user!.sub;
+    const imagePath = req.file ? `/uploads/posts/${req.file.filename}` : null;
 
     const post = await prisma.post.create({
       data: {
@@ -49,6 +58,7 @@ export async function createPost(req: Request, res: Response, next: NextFunction
         oldPrice: data.oldPrice,
         link: data.link || null,
         tags: data.tags,
+        imagePath,
         authorId,
         status: "PENDING",
       },

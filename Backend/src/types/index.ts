@@ -28,6 +28,7 @@ export interface PostCreateInput {
   oldPrice?: string;
   link?: string;
   tags?: string;
+  imagePath?: string;
   telegramInviteLink?: string;
   whatsappInviteLink?: string;
   channels: ("TELEGRAM" | "WHATSAPP")[];
@@ -53,6 +54,7 @@ export interface PostRecord {
   oldPrice: string | null;
   link: string | null;
   tags: string | null;
+  imagePath: string | null;
   authorId: string;
   status: PostStatus | string;
   createdAt: Date;

@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { ExternalLink, Send } from 'lucide-react';
+import { ExternalLink, ImagePlus, Send, X } from 'lucide-react';
 import { postsApi } from '../../api/posts';
 import { Alert } from '../../components/Alert';
 import { Badge } from '../../components/Badge';
@@ -30,6 +30,7 @@ export function CreatePostPage() {
     oldPrice: '',
     link: '',
     tags: '',
+    image: null,
     telegramInviteLink: '',
     whatsappInviteLink: '',
     channels: ['TELEGRAM'],
@@ -52,12 +53,19 @@ export function CreatePostPage() {
     update('channels', next);
   }
 
+  function updateImage(file: File | null) {
+    setErrors((current) => ({ ...current, image: undefined }));
+    update('image', file);
+  }
+
   function validate() {
     const next: Errors = {};
     if (!form.title.trim()) next.title = 'Titulo obrigatorio';
     if (form.title.length > 200) next.title = 'Maximo de 200 caracteres';
     if ((form.description || '').length > 1000) next.description = 'Maximo de 1000 caracteres';
     if (form.link?.trim() && !isValidUrl(form.link)) next.link = 'Informe uma URL valida';
+    if (form.image && !form.image.type.startsWith('image/')) next.image = 'Selecione um arquivo de imagem';
+    if (form.image && form.image.size > 5 * 1024 * 1024) next.image = 'Imagem deve ter no maximo 5 MB';
     if (form.telegramInviteLink?.trim() && !isValidUrl(form.telegramInviteLink)) {
       next.telegramInviteLink = 'Informe uma URL valida';
     }
@@ -91,6 +99,7 @@ export function CreatePostPage() {
         oldPrice: form.oldPrice?.trim() || undefined,
         link: form.link?.trim() || undefined,
         tags: form.tags?.trim() || undefined,
+        image: form.image || undefined,
         telegramInviteLink: form.telegramInviteLink?.trim() || undefined,
         whatsappInviteLink: form.whatsappInviteLink?.trim() || undefined,
         channels: form.channels,
@@ -127,6 +136,36 @@ export function CreatePostPage() {
               </div>
               <Input label="Link" value={form.link} onChange={(e) => update('link', e.target.value)} placeholder="https://loja.com/produto" error={errors.link} />
               <Input label="Tags" value={form.tags} onChange={(e) => update('tags', e.target.value)} placeholder="promocao, tenis, nike" />
+
+              <div className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Imagem do post</span>
+                <label className="flex min-h-24 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
+                  <input
+                    className="sr-only"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => updateImage(event.target.files?.[0] ?? null)}
+                  />
+                  <span className="flex items-center gap-2">
+                    <ImagePlus className="h-4 w-4" />
+                    Selecionar imagem
+                  </span>
+                </label>
+                {form.image && (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <span className="truncate text-slate-700">{form.image.name}</span>
+                    <button
+                      type="button"
+                      className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                      onClick={() => updateImage(null)}
+                      aria-label="Remover imagem"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {errors.image && <p className="text-xs font-medium text-rose-600">{errors.image}</p>}
+              </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <Input

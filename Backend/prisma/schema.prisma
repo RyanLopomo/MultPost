@@ -45,6 +45,7 @@ model Post {
   oldPrice    String?
   link        String?
   tags        String?
+  imagePath   String?
   authorId    String
   status      String     @default("PENDING")
   createdAt   DateTime   @default(now())

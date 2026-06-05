@@ -31,12 +31,18 @@ async function initSqlite(): Promise<void> {
     oldPrice TEXT,
     link TEXT,
     tags TEXT,
+    imagePath TEXT,
     authorId TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'PENDING',
     createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updatedAt DATETIME NOT NULL,
     CONSTRAINT posts_authorId_fkey FOREIGN KEY (authorId) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE CASCADE
   )`);
+
+  const postColumns = await prisma.$queryRawUnsafe<Array<{ name: string }>>(`PRAGMA table_info(posts)`);
+  if (!postColumns.some((column) => column.name === "imagePath")) {
+    await prisma.$executeRawUnsafe(`ALTER TABLE posts ADD COLUMN imagePath TEXT`);
+  }
 
   await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS publishings (
     id TEXT NOT NULL PRIMARY KEY,

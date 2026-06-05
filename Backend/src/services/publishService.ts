@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import TelegramBot from "node-telegram-bot-api";
 import { prisma } from "../models/prisma";
 import { adaptPost, buildWhatsAppLink } from "../utils/contentAdapter";
@@ -38,7 +40,13 @@ async function publishToTelegram(post: Post, text: string): Promise<PublishResul
 
   try {
     const bot = getTelegramBot();
-    const message = await bot.sendMessage(chatId, text, { parse_mode: "HTML" });
+    const imagePath = post.imagePath ? path.resolve(process.cwd(), post.imagePath.replace(/^\//, "")) : null;
+    const hasImage = imagePath ? fs.existsSync(imagePath) : false;
+    const message = hasImage && imagePath
+      ? text.length <= 1024
+        ? await bot.sendPhoto(chatId, imagePath, { caption: text, parse_mode: "HTML" })
+        : await bot.sendPhoto(chatId, imagePath).then(() => bot.sendMessage(chatId, text, { parse_mode: "HTML" }))
+      : await bot.sendMessage(chatId, text, { parse_mode: "HTML" });
 
     await prisma.publishing.create({
       data: {

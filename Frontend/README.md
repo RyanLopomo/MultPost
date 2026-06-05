@@ -68,6 +68,7 @@ VITE_API_URL=http://localhost:3333
 
 A tela de criacao de post possui os campos da oferta, os canais de publicacao e dois links de convite:
 
+- `Imagem do post`: upload opcional de imagem ate 5 MB.
 - `Convite Telegram`: usado no texto gerado para WhatsApp.
 - `Convite WhatsApp`: usado na mensagem publicada no Telegram.
 

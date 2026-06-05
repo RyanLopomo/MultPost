@@ -138,6 +138,9 @@ Todas as rotas de posts exigem autenticacao.
 
 Cria um post e tenta publica-lo nos canais informados.
 
+Sem imagem, envie JSON normalmente. Com imagem, envie `multipart/form-data` usando os
+mesmos campos e o arquivo no campo `image`.
+
 Body:
 
 ```json
@@ -148,6 +151,7 @@ Body:
   "oldPrice": "R$ 399,90",
   "link": "https://loja.com/produto",
   "tags": "promocao, tenis, nike",
+  "image": "arquivo opcional em multipart/form-data",
   "telegramInviteLink": "https://t.me/+codigo-do-grupo",
   "whatsappInviteLink": "https://chat.whatsapp.com/codigo-do-grupo",
   "channels": ["TELEGRAM", "WHATSAPP"]
@@ -162,6 +166,7 @@ Validacoes:
 - `oldPrice`: opcional, ate 50 caracteres.
 - `link`: opcional, precisa ser URL valida quando preenchido.
 - `tags`: opcional, ate 200 caracteres.
+- `image`: opcional em `multipart/form-data`; aceita arquivos de imagem ate 5 MB.
 - `telegramInviteLink`: URL do grupo/canal do Telegram. Obrigatoria quando `channels` inclui `WHATSAPP`.
 - `whatsappInviteLink`: URL do grupo do WhatsApp. Obrigatoria quando `channels` inclui `TELEGRAM`.
 - `channels`: lista obrigatoria com ao menos um item entre `TELEGRAM` e `WHATSAPP`.
@@ -169,7 +174,9 @@ Validacoes:
 Links de convite por canal:
 
 - Ao publicar no `TELEGRAM`, o texto enviado inclui o `whatsappInviteLink`.
+- Se `image` for enviada, o Telegram publica a imagem com legenda.
 - Ao publicar no `WHATSAPP`, o link gerado inclui o `telegramInviteLink`.
+- O link `https://wa.me/?text=...` nao anexa imagem automaticamente; ele compartilha apenas o texto.
 - Ao publicar nos dois canais, cada mensagem recebe o convite do outro canal.
 
 Resposta `201`:

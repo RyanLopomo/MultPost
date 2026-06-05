@@ -26,6 +26,7 @@ export type Post = {
   oldPrice?: string | null;
   link?: string | null;
   tags?: string | null;
+  imagePath?: string | null;
   status?: PublishStatus;
   channels?: Channel[];
   author?: PostAuthor;
@@ -44,6 +45,7 @@ export type CreatePostPayload = {
   oldPrice?: string;
   link?: string;
   tags?: string;
+  image?: File | null;
   telegramInviteLink?: string;
   whatsappInviteLink?: string;
   channels: Channel[];
