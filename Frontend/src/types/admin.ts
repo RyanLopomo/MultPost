@@ -6,6 +6,8 @@ export type RankingItem = {
   id?: string;
   name: string;
   email?: string;
+  active?: boolean;
+  monthPosts?: number;
   postsCount?: number;
   totalPosts?: number;
 };

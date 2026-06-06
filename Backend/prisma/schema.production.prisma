@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("EMPLOYEE")
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  posts        Post[]
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  price       String?
+  oldPrice    String?
+  link        String?
+  tags        String?
+  imagePath   String?
+  authorId    String
+  status      String     @default("PENDING")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  author      User         @relation(fields: [authorId], references: [id])
+  publishings Publishing[]
+
+  @@map("posts")
+}
+
+model Publishing {
+  id          String    @id @default(cuid())
+  postId      String
+  channel     String
+  status      String    @default("SUCCESS")
+  sentAt      DateTime  @default(now())
+  errorMsg    String?
+  messageId   String?
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("publishings")
+}
+
+model Channel_Config {
+  id             String  @id @default(cuid())
+  telegramToken  String?
+  telegramChatId String?
+  whatsappNumber String?
+  postSignature  String?
+  updatedAt      DateTime @updatedAt
+
+  @@map("channel_config")
+}

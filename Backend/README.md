@@ -181,15 +181,17 @@ Convites cruzados:
 
 ## Para produção
 
-1. Troque SQLite por PostgreSQL no `schema.prisma`:
-   ```
-   provider = "postgresql"
-   url      = env("DATABASE_URL")
-   ```
-2. Use HTTPS (Nginx ou proxy reverso)
-3. Configure `NODE_ENV=production`
-4. Armazene `.env` com segurança (nunca no Git)
-5. Configure rotação de logs
+Use `prisma/schema.production.prisma` com PostgreSQL.
+
+Scripts principais:
+
+```bash
+npm run db:generate:prod
+npm run db:migrate:deploy:prod
+npm run start:prod
+```
+
+Veja o passo a passo em `docs/DEPLOY.md`.
 
 ---
 
@@ -207,3 +209,4 @@ src/
 prisma/
   schema.prisma    # Modelos do banco
 ```
+

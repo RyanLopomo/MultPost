@@ -3,31 +3,34 @@ import type { User } from '../types/auth';
 const TOKEN_KEY = 'multipost:token';
 const USER_KEY = 'multipost:user';
 
+localStorage.removeItem(TOKEN_KEY);
+localStorage.removeItem(USER_KEY);
+
 export const authStorage = {
   getToken() {
-    return localStorage.getItem(TOKEN_KEY);
+    return sessionStorage.getItem(TOKEN_KEY);
   },
   setToken(token: string) {
-    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.setItem(TOKEN_KEY, token);
   },
   removeToken() {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
   },
   getUser(): User | null {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = sessionStorage.getItem(USER_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw) as User;
     } catch {
-      localStorage.removeItem(USER_KEY);
+      sessionStorage.removeItem(USER_KEY);
       return null;
     }
   },
   setUser(user: User) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    sessionStorage.setItem(USER_KEY, JSON.stringify(user));
   },
   removeUser() {
-    localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(USER_KEY);
   },
   clear() {
     this.removeToken();

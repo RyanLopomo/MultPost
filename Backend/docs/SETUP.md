@@ -160,13 +160,17 @@ link de WhatsApp continua sendo apenas texto, pois `wa.me` nao anexa arquivos au
 | `npm run build` | Compila TypeScript para `dist`. |
 | `npm start` | Executa `dist/index.js`. |
 | `npm run db:migrate` | Roda `prisma migrate dev`. |
+| `npm run db:migrate:deploy:prod` | Aplica migrations PostgreSQL de producao. |
 | `npm run db:generate` | Gera Prisma Client. |
+| `npm run db:generate:prod` | Gera Prisma Client usando `schema.production.prisma`. |
 | `npm run db:init` | Cria/sincroniza as tabelas SQLite locais sem usar o schema engine. |
 | `npm run db:seed` | Executa o seed de usuarios iniciais. |
+| `npm run start:prod` | Aplica migrations de producao e inicia o backend compilado. |
 
 ## Observacoes de producao
 
-- Trocar SQLite por PostgreSQL ou outro banco apropriado.
+- Usar `prisma/schema.production.prisma` com PostgreSQL.
+- Versionar e aplicar migrations em `prisma/migrations`.
 - Usar `NODE_ENV=production`.
 - Configurar HTTPS via proxy reverso ou plataforma de deploy.
 - Guardar `.env` fora do versionamento.

@@ -40,7 +40,8 @@ export function AdminDashboardPage() {
                     <tr>
                       <Th>Funcionário</Th>
                       <Th>Email</Th>
-                      <Th>Posts</Th>
+                      <Th>Posts no mes</Th>
+                      <Th>Total</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -48,7 +49,8 @@ export function AdminDashboardPage() {
                       <tr key={item.userId || item.id || `${item.name}-${index}`}>
                         <Td className="font-semibold text-slate-950">{item.name}</Td>
                         <Td>{item.email || '-'}</Td>
-                        <Td>{item.postsCount ?? item.totalPosts ?? 0}</Td>
+                        <Td>{item.monthPosts ?? 0}</Td>
+                        <Td>{item.totalPosts ?? item.postsCount ?? 0}</Td>
                       </tr>
                     ))}
                   </tbody>

@@ -8,6 +8,7 @@ Esta pasta documenta o backend do Multipost e a integracao com o frontend.
 - [Referencia da API](./API.md)
 - [Setup, variaveis e comandos](./SETUP.md)
 - [Integracao Backend + Frontend](./INTEGRATION.md)
+- [Deploy em producao](./DEPLOY.md)
 
 ## Resumo rapido
 
@@ -29,6 +30,7 @@ Principais responsabilidades:
 - Express
 - Prisma ORM
 - SQLite em desenvolvimento
+- PostgreSQL em producao
 - JWT
 - bcrypt
 - Zod
@@ -47,7 +49,9 @@ src/
   types/           Tipos TypeScript compartilhados.
   utils/           Logger, seed e adaptacao de conteudo.
 prisma/
-  schema.prisma    Modelos, enums e datasource do banco.
+  schema.prisma               Schema local com SQLite.
+  schema.production.prisma    Schema de producao com PostgreSQL.
+  migrations/                 Migrations de producao.
 ```
 
 ## Convencoes de resposta

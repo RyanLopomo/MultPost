@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { ExternalLink, ImagePlus, Send, X } from 'lucide-react';
+import { ExternalLink, ImagePlus, Lightbulb, Send, X } from 'lucide-react';
 import { postsApi } from '../../api/posts';
 import { Alert } from '../../components/Alert';
 import { Badge } from '../../components/Badge';
@@ -10,6 +10,28 @@ import { Textarea } from '../../components/Textarea';
 import type { Channel, CreatePostPayload, CreatePostResponse } from '../../types/post';
 
 const channelOptions: Channel[] = ['TELEGRAM', 'WHATSAPP'];
+const suggestionStyles = [
+  {
+    description: (title: string, price: string, oldPrice: string) =>
+      `${title} com oferta especial${price ? ` por ${price}` : ''}${oldPrice ? `, antes ${oldPrice}` : ''}. Uma boa opcao para aproveitar hoje, com estoque sujeito a disponibilidade.`,
+    tags: ['oferta', 'promocao', 'desconto', 'achadinho'],
+  },
+  {
+    description: (title: string, price: string) =>
+      `Olha essa oportunidade: ${title}${price ? ` saindo por ${price}` : ''}. Produto selecionado para quem quer comprar bem e pagar menos.`,
+    tags: ['imperdivel', 'preco_baixo', 'cupom', 'compras'],
+  },
+  {
+    description: (title: string, price: string) =>
+      `${title} em destaque${price ? ` com preco de ${price}` : ''}. Confira os detalhes no link e garanta antes que a oferta acabe.`,
+    tags: ['promocao_do_dia', 'oferta_online', 'produto_em_destaque', 'economia'],
+  },
+  {
+    description: (title: string, price: string, oldPrice: string) =>
+      `Oferta encontrada para ${title}.${oldPrice && price ? ` De ${oldPrice} por ${price}.` : price ? ` Valor atual: ${price}.` : ''} Ideal para compartilhar com quem gosta de economizar.`,
+    tags: ['achados', 'descontos', 'preco_especial', 'compartilhe'],
+  },
+];
 
 type Errors = Partial<Record<keyof CreatePostPayload, string>>;
 
@@ -20,6 +42,24 @@ function isValidUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function normalizeTag(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s_-]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .toLowerCase();
+}
+
+function buildProductTags(title: string) {
+  return title
+    .split(/\s+/)
+    .map(normalizeTag)
+    .filter((tag) => tag.length >= 4)
+    .slice(0, 3);
 }
 
 export function CreatePostPage() {
@@ -39,6 +79,7 @@ export function CreatePostPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [result, setResult] = useState<CreatePostResponse | null>(null);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
 
   const selectedChannels = useMemo(() => new Set(form.channels), [form.channels]);
 
@@ -56,6 +97,22 @@ export function CreatePostPage() {
   function updateImage(file: File | null) {
     setErrors((current) => ({ ...current, image: undefined }));
     update('image', file);
+  }
+
+  function generateSuggestion() {
+    const title = form.title.trim() || 'Produto selecionado';
+    const price = form.price?.trim() || '';
+    const oldPrice = form.oldPrice?.trim() || '';
+    const style = suggestionStyles[suggestionIndex % suggestionStyles.length];
+    const tags = Array.from(new Set([...style.tags, ...buildProductTags(title)]));
+
+    setForm((current) => ({
+      ...current,
+      description: style.description(title, price, oldPrice),
+      tags: tags.join(', '),
+    }));
+    setSuggestionIndex((current) => current + 1);
+    setErrors((current) => ({ ...current, description: undefined, tags: undefined }));
   }
 
   function validate() {
@@ -129,6 +186,22 @@ export function CreatePostPage() {
             <form className="space-y-4" onSubmit={handleSubmit}>
               {apiError && <Alert variant="error" message={apiError} />}
               <Input label="Titulo" value={form.title} onChange={(e) => update('title', e.target.value)} maxLength={200} error={errors.title} required />
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Sugestoes de texto</p>
+                    <p className="text-xs text-slate-500">Gere uma descricao e tags a partir do produto.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    leftIcon={<Lightbulb className="h-4 w-4" />}
+                    onClick={generateSuggestion}
+                  >
+                    Sugerir
+                  </Button>
+                </div>
+              </div>
               <Textarea label="Descricao" value={form.description} onChange={(e) => update('description', e.target.value)} maxLength={1000} error={errors.description} />
               <div className="grid gap-4 md:grid-cols-2">
                 <Input label="Preco" value={form.price} onChange={(e) => update('price', e.target.value)} placeholder="R$ 299,90" />

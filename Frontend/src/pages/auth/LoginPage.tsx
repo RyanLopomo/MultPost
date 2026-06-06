@@ -11,8 +11,8 @@ export function LoginPage() {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState('admin@empresa.com');
-  const [password, setPassword] = useState('admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +54,8 @@ export function LoginPage() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
-            placeholder="admin@empresa.com"
+            placeholder="email@empresa.com"
+            autoComplete="username"
           />
           <Input
             label="Senha"
@@ -63,6 +64,7 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             required
             placeholder="Digite sua senha"
+            autoComplete="current-password"
           />
           <Button className="w-full" loading={loading} leftIcon={<Mail className="h-4 w-4" />}>
             Entrar

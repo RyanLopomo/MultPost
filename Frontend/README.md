@@ -4,7 +4,7 @@ Frontend operacional para o projeto **Multipost**, feito com React, TypeScript, 
 
 ## Recursos implementados
 
-- Login com persistência de sessão em `localStorage`
+- Login com sessao em `sessionStorage`
 - Interceptor Axios com `Authorization: Bearer <token>`
 - Logout automático em erro `401`
 - Rotas autenticadas e rotas somente `ADMIN`
@@ -64,6 +64,12 @@ Crie o arquivo `.env` com:
 VITE_API_URL=http://localhost:3333
 ```
 
+Em producao, na Vercel, use a URL publica do backend:
+
+```env
+VITE_API_URL=https://seu-backend.onrender.com
+```
+
 ## Criacao de posts
 
 A tela de criacao de post possui os campos da oferta, os canais de publicacao e dois links de convite:
@@ -105,7 +111,7 @@ src/
 
 ## Credenciais de teste sugeridas
 
-A tela de login vem preenchida com:
+Use em ambiente local, se o backend foi populado com seed:
 
 ```txt
 email: admin@empresa.com
@@ -113,3 +119,4 @@ senha: admin@123
 ```
 
 Altere conforme os usuários cadastrados no backend.
+

@@ -9,43 +9,66 @@ export async function getDashboard(_req: Request, res: Response, next: NextFunct
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalPosts, monthPosts, totalUsers, postsByEmployee, recentPosts] =
-      await prisma.$transaction([
-        prisma.post.count(),
-        prisma.post.count({ where: { createdAt: { gte: startOfMonth } } }),
-        prisma.user.count({ where: { active: true, role: "EMPLOYEE" } }),
-        prisma.post.groupBy({
-          by: ["authorId"],
-          _count: { id: true },
-          orderBy: { _count: { id: "desc" } },
-        }),
-        prisma.post.findMany({
-          take: 20,
-          orderBy: { createdAt: "desc" },
-          include: {
-            author: { select: { id: true, name: true } },
-            publishings: { select: { channel: true, status: true } },
-          },
-        }),
-      ]);
+    const [
+      totalPosts,
+      monthPosts,
+      totalUsers,
+      postsByEmployee,
+      monthPostsByEmployee,
+      employees,
+      recentPosts,
+    ] = await prisma.$transaction([
+      prisma.post.count(),
+      prisma.post.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prisma.user.count({ where: { active: true, role: "EMPLOYEE" } }),
+      prisma.post.groupBy({
+        by: ["authorId"],
+        _count: { id: true },
+        orderBy: { authorId: "asc" },
+      }),
+      prisma.post.groupBy({
+        by: ["authorId"],
+        where: { createdAt: { gte: startOfMonth } },
+        _count: { id: true },
+        orderBy: { authorId: "asc" },
+      }),
+      prisma.user.findMany({
+        where: { role: "EMPLOYEE" },
+        select: { id: true, name: true, email: true, active: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.post.findMany({
+        take: 20,
+        orderBy: { createdAt: "desc" },
+        include: {
+          author: { select: { id: true, name: true } },
+          publishings: { select: { channel: true, status: true } },
+        },
+      }),
+    ]);
 
-    // Enriquece o ranking com dados dos usuários
-    const authorIds = postsByEmployee.map((p) => p.authorId);
-    const authors = await prisma.user.findMany({
-      where: { id: { in: authorIds } },
-      select: { id: true, name: true, email: true },
-    });
+    const totalByEmployee = new Map(
+      postsByEmployee.map((p) => [p.authorId, typeof p._count === "object" ? p._count?.id ?? 0 : 0])
+    );
+    const monthByEmployee = new Map(
+      monthPostsByEmployee.map((p) => [p.authorId, typeof p._count === "object" ? p._count?.id ?? 0 : 0])
+    );
 
-    const authorMap = new Map(authors.map((a: { id: string; name: string; email: string }) => [a.id, a]));
-
-    const ranking = postsByEmployee.map((p) => {
-      const total = typeof p._count === "object" ? p._count?.id ?? 0 : 0;
-
-      return {
-        author: authorMap.get(p.authorId),
-        total,
-      };
-    });
+    const ranking = employees
+      .map((employee) => {
+        const total = totalByEmployee.get(employee.id) ?? 0;
+        return {
+          userId: employee.id,
+          id: employee.id,
+          name: employee.name,
+          email: employee.email,
+          active: employee.active,
+          totalPosts: total,
+          postsCount: total,
+          monthPosts: monthByEmployee.get(employee.id) ?? 0,
+        };
+      })
+      .sort((a, b) => b.monthPosts - a.monthPosts || b.totalPosts - a.totalPosts || a.name.localeCompare(b.name));
 
     res.status(200).json({
       success: true,
@@ -60,8 +83,12 @@ export async function listUsers(_req: Request, res: Response, next: NextFunction
   try {
     const users = await prisma.user.findMany({
       select: {
-        id: true, name: true, email: true, role: true,
-        active: true, createdAt: true,
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        active: true,
+        createdAt: true,
         _count: { select: { posts: true } },
       },
       orderBy: { createdAt: "asc" },
@@ -75,7 +102,7 @@ export async function listUsers(_req: Request, res: Response, next: NextFunction
 
 const createUserSchema = z.object({
   name: z.string().min(2, "Nome muito curto.").max(100),
-  email: z.string().email("E-mail inválido.").toLowerCase(),
+  email: z.string().email("E-mail invalido.").toLowerCase(),
   password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
   role: z.enum(["ADMIN", "EMPLOYEE"]).default("EMPLOYEE"),
 });
@@ -85,7 +112,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
     const data = createUserSchema.parse(req.body);
 
     const exists = await prisma.user.findUnique({ where: { email: data.email } });
-    if (exists) throw new AppError("E-mail já cadastrado.", 409);
+    if (exists) throw new AppError("E-mail ja cadastrado.", 409);
 
     const passwordHash = await bcrypt.hash(data.password, 12);
 
@@ -104,13 +131,12 @@ export async function toggleUser(req: Request, res: Response, next: NextFunction
   try {
     const { id } = req.params;
 
-    // Admin não pode desativar a si mesmo
     if (id === req.user!.sub) {
-      throw new AppError("Não é possível desativar sua própria conta.", 400);
+      throw new AppError("Nao e possivel desativar sua propria conta.", 400);
     }
 
     const user = await prisma.user.findUnique({ where: { id } });
-    if (!user) throw new AppError("Usuário não encontrado.", 404);
+    if (!user) throw new AppError("Usuario nao encontrado.", 404);
 
     const updated = await prisma.user.update({
       where: { id },
@@ -118,7 +144,6 @@ export async function toggleUser(req: Request, res: Response, next: NextFunction
       select: { id: true, name: true, active: true },
     });
 
-    // Revoga sessões ao desativar
     if (!updated.active) {
       await prisma.session.deleteMany({ where: { userId: id } });
     }
