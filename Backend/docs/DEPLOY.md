@@ -63,7 +63,13 @@ O comando `start:prod` aplica migrations pendentes com:
 prisma migrate deploy --schema prisma/schema.production.prisma
 ```
 
-Depois inicia:
+Depois cria os usuarios iniciais caso ainda nao existam:
+
+```bash
+node dist/utils/seed.js
+```
+
+Por fim, inicia:
 
 ```bash
 node dist/index.js
@@ -91,11 +97,8 @@ Depois do deploy do frontend, atualize `CORS_ORIGIN` no backend com a URL final 
 
 ## 4. Seed de usuarios
 
-Para criar os usuarios iniciais em producao, rode no shell do Render:
-
-```bash
-npm run db:seed
-```
+Os usuarios iniciais sao criados automaticamente quando o backend inicia em producao.
+O seed usa `upsert`, entao nao altera a senha de usuarios que ja existem.
 
 Credenciais criadas pelo seed:
 

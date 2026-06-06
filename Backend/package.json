@@ -8,13 +8,14 @@
     "build": "tsc",
     "build:render": "npm install --include=dev && npm run db:generate:prod && npm run build",
     "start": "node dist/index.js",
-    "start:prod": "npm run db:migrate:deploy:prod && node dist/index.js",
+    "start:prod": "npm run db:migrate:deploy:prod && npm run db:seed:prod && node dist/index.js",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy:prod": "prisma migrate deploy --schema prisma/schema.production.prisma",
     "db:generate": "prisma generate",
     "db:generate:prod": "prisma generate --schema prisma/schema.production.prisma",
     "db:init": "tsx src/utils/initSqlite.ts",
-    "db:seed": "tsx src/utils/seed.ts"
+    "db:seed": "tsx src/utils/seed.ts",
+    "db:seed:prod": "node dist/utils/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
