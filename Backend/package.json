@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "build:render": "npm install --include=dev && npm run db:generate:prod && npm run build",
     "start": "node dist/index.js",
     "start:prod": "npm run db:migrate:deploy:prod && node dist/index.js",
     "db:migrate": "prisma migrate dev",

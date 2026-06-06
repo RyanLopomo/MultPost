@@ -158,6 +158,7 @@ link de WhatsApp continua sendo apenas texto, pois `wa.me` nao anexa arquivos au
 | --- | --- |
 | `npm run dev` | Inicia o servidor com hot reload via `tsx watch`. |
 | `npm run build` | Compila TypeScript para `dist`. |
+| `npm run build:render` | Instala dependencias de build, gera Prisma prod e compila para Render. |
 | `npm start` | Executa `dist/index.js`. |
 | `npm run db:migrate` | Roda `prisma migrate dev`. |
 | `npm run db:migrate:deploy:prod` | Aplica migrations PostgreSQL de producao. |

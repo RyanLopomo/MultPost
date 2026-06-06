@@ -29,9 +29,13 @@ Configuracao:
 
 ```text
 Root Directory: Backend
-Build Command: npm install && npm run db:generate:prod && npm run build
+Build Command: npm run build:render
 Start Command: npm run start:prod
 ```
+
+O `build:render` usa `npm install --include=dev` porque o TypeScript precisa de
+`typescript` e `@types/*` durante a compilacao. Em runtime, o Render executa apenas
+o codigo compilado em `dist`.
 
 Variaveis de ambiente:
 
