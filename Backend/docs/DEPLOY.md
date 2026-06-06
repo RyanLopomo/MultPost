@@ -50,6 +50,13 @@ TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 ```
 
+O backend tambem aceita automaticamente os dominios Vercel deste projeto:
+
+```text
+https://mult-post.vercel.app
+https://mult-post-*-ryanlopomos-projects.vercel.app
+```
+
 O comando `start:prod` aplica migrations pendentes com:
 
 ```bash

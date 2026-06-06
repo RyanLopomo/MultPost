@@ -17,8 +17,17 @@ const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const allowedVercelOriginPatterns = [
+  /^https:\/\/mult-post\.vercel\.app$/,
+  /^https:\/\/mult-post-[a-z0-9-]+-ryanlopomos-projects\.vercel\.app$/,
+];
+
 function isAllowedOrigin(origin: string): boolean {
   if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  if (allowedVercelOriginPatterns.some((pattern) => pattern.test(origin))) {
     return true;
   }
 
