@@ -31,6 +31,7 @@ function buildTelegram(post: Post, whatsappInviteLink?: string): string {
   if (post.price) offerLines.push(`${ICON_PRICE}<b>VALOR : ${escapeHtml(post.price)}</b>`);
   if (post.description) offerLines.push(`${ICON_COUPON}<b>CUPOM : ${escapeHtml(post.description)}</b>`);
   if (post.link) offerLines.push(escapeHtml(post.link));
+  if (post.tags) offerLines.push(escapeHtml(post.tags));
   if (offerLines.length) parts.push(offerLines.join("\n"));
   if (whatsappInviteLink) {
     parts.push(`${ICON_GROUP}<b>GRUPO de OFERTAS</b>\n${escapeHtml(whatsappInviteLink)}`);
@@ -47,6 +48,7 @@ function buildWhatsApp(post: Post, telegramInviteLink?: string): string {
   if (post.price) offerLines.push(`${ICON_PRICE}*VALOR : ${post.price}*`);
   if (post.description) offerLines.push(`${ICON_COUPON}*CUPOM : ${post.description}*`);
   if (post.link) offerLines.push(post.link);
+  if (post.tags) offerLines.push(post.tags);
   if (offerLines.length) parts.push(offerLines.join("\n"));
   if (telegramInviteLink) {
     parts.push(`${ICON_GROUP}*GRUPO de OFERTAS*\n${telegramInviteLink}`);

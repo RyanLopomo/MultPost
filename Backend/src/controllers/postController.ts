@@ -12,6 +12,7 @@ const createPostSchema = z
     oldPrice: z.string().max(50).optional(),
     link: z.string().url("Link invalido.").optional().or(z.literal("")),
     tags: z.string().max(200).optional(),
+    presetText: z.string().max(500).optional(),
     telegramInviteLink: z.string().url("Link do Telegram invalido.").optional().or(z.literal("")),
     whatsappInviteLink: z.string().url("Link do WhatsApp invalido.").optional().or(z.literal("")),
     channels: z.preprocess((value) => {
@@ -57,7 +58,7 @@ export async function createPost(req: Request, res: Response, next: NextFunction
         price: data.price,
         oldPrice: data.oldPrice,
         link: data.link || null,
-        tags: data.tags,
+        tags: data.presetText || data.tags,
         imagePath,
         authorId,
         status: "PENDING",

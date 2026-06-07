@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { ExternalLink, ImagePlus, Lightbulb, Send, X } from 'lucide-react';
+import { ExternalLink, ImagePlus, Lightbulb, Plus, Send, Trash2, X } from 'lucide-react';
 import { postsApi } from '../../api/posts';
 import { Alert } from '../../components/Alert';
 import { Badge } from '../../components/Badge';
@@ -23,6 +23,11 @@ const suggestionStyles = [
   {
     description: () => 'SEM CUPOM',
   },
+];
+const presetStorageKey = 'multipost:post-presets';
+const defaultPresets = [
+  '🇧🇷 PRODUTO JÁ NO BRASIL\n(ENVIO RÁPIDO E SEM TAXA)',
+  '🚛PRODUTO JÁ NO BRASIL\n(ENVIO RAPIDO E SEM TAXA)',
 ];
 
 type Errors = Partial<Record<keyof CreatePostPayload, string>>;
@@ -83,6 +88,7 @@ export function CreatePostPage() {
     description: '',
     price: '',
     link: '',
+    presetText: '',
     image: null,
     telegramInviteLink: '',
     whatsappInviteLink: '',
@@ -94,6 +100,8 @@ export function CreatePostPage() {
   const [result, setResult] = useState<CreatePostResponse | null>(null);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [whatsappHint, setWhatsappHint] = useState<string | null>(null);
+  const [presets, setPresets] = useState<string[]>(defaultPresets);
+  const [presetDraft, setPresetDraft] = useState(defaultPresets[0]);
 
   const selectedChannels = useMemo(() => new Set(form.channels), [form.channels]);
   const imagePreviewUrl = useMemo(() => (form.image ? URL.createObjectURL(form.image) : null), [form.image]);
@@ -116,6 +124,25 @@ export function CreatePostPage() {
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(presetStorageKey);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved) && saved.every((item) => typeof item === 'string')) {
+        setPresets(saved);
+        setPresetDraft(saved[0] || '');
+      }
+    } catch {
+      localStorage.removeItem(presetStorageKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(presetStorageKey, JSON.stringify(presets));
+  }, [presets]);
 
   function update<K extends keyof CreatePostPayload>(field: K, value: CreatePostPayload[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -144,11 +171,28 @@ export function CreatePostPage() {
     setErrors((current) => ({ ...current, description: undefined }));
   }
 
+  function savePreset() {
+    const nextPreset = presetDraft.trim();
+    if (!nextPreset) return;
+
+    setPresets((current) => {
+      const withoutDuplicate = current.filter((item) => item !== nextPreset);
+      return [nextPreset, ...withoutDuplicate].slice(0, 12);
+    });
+    update('presetText', nextPreset);
+  }
+
+  function removePreset(preset: string) {
+    setPresets((current) => current.filter((item) => item !== preset));
+    if (form.presetText === preset) update('presetText', '');
+  }
+
   function validate() {
     const next: Errors = {};
     if (!form.title.trim()) next.title = 'Titulo obrigatorio';
     if (form.title.length > 200) next.title = 'Maximo de 200 caracteres';
     if ((form.description || '').length > 1000) next.description = 'Maximo de 1000 caracteres';
+    if ((form.presetText || '').length > 500) next.presetText = 'Maximo de 500 caracteres';
     if (form.link?.trim() && !isValidUrl(form.link)) next.link = 'Informe uma URL valida';
     if (form.image && !form.image.type.startsWith('image/')) next.image = 'Selecione um arquivo de imagem';
     if (form.image && form.image.size > 5 * 1024 * 1024) next.image = 'Imagem deve ter no maximo 5 MB';
@@ -183,6 +227,7 @@ export function CreatePostPage() {
         description: form.description?.trim() || undefined,
         price: form.price?.trim() || undefined,
         link: form.link?.trim() || undefined,
+        presetText: form.presetText?.trim() || undefined,
         image: form.image || undefined,
         telegramInviteLink: form.telegramInviteLink?.trim() || undefined,
         whatsappInviteLink: form.whatsappInviteLink?.trim() || undefined,
@@ -262,6 +307,57 @@ export function CreatePostPage() {
               />
               <Input label="Preco" value={form.price} onChange={(e) => update('price', e.target.value)} placeholder="R$ 299,90" />
               <Input label="Link" value={form.link} onChange={(e) => update('link', e.target.value)} placeholder="https://loja.com/produto" error={errors.link} />
+
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <Textarea
+                      label="Preset abaixo do link"
+                      value={presetDraft}
+                      onChange={(event) => setPresetDraft(event.target.value)}
+                      maxLength={500}
+                      placeholder="🇧🇷 PRODUTO JÁ NO BRASIL&#10;(ENVIO RÁPIDO E SEM TAXA)"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    onClick={savePreset}
+                    className="shrink-0"
+                  >
+                    Salvar preset
+                  </Button>
+                </div>
+
+                {presets.length > 0 && (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {presets.map((preset) => {
+                      const active = form.presetText === preset;
+                      return (
+                        <div key={preset} className={`flex items-start gap-2 rounded-lg border bg-white p-2 ${active ? 'border-slate-950' : 'border-slate-200'}`}>
+                          <button
+                            type="button"
+                            className="min-h-12 flex-1 whitespace-pre-wrap text-left text-xs font-semibold text-slate-700"
+                            onClick={() => update('presetText', active ? '' : preset)}
+                          >
+                            {preset}
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"
+                            onClick={() => removePreset(preset)}
+                            aria-label="Remover preset"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {errors.presetText && <p className="text-xs font-medium text-rose-600">{errors.presetText}</p>}
+              </div>
 
               <div className="space-y-2">
                 <span className="text-sm font-medium text-slate-700">Imagem do post</span>
