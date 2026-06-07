@@ -57,7 +57,7 @@ export function UsersPage() {
         <p className="text-sm text-slate-500">Gerencie acessos e permissões da equipe.</p>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+      <div className="space-y-5">
         <Card>
           <CardHeader className="flex items-center justify-between gap-3">
             <div>
@@ -116,9 +116,9 @@ export function UsersPage() {
             <h2 className="font-bold text-slate-950">Novo usuário</h2>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleCreate}>
-              {createError && <Alert variant="error" message={createError} />}
-              {success && <Alert variant="success" message={success} />}
+            <form className="grid gap-4 lg:grid-cols-2" onSubmit={handleCreate}>
+              {createError && <div className="lg:col-span-2"><Alert variant="error" message={createError} /></div>}
+              {success && <div className="lg:col-span-2"><Alert variant="success" message={success} /></div>}
               <Input label="Nome" value={form.name} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} required />
               <Input label="Email" type="email" value={form.email} onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))} required />
               <Input label="Senha" type="password" value={form.password} onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))} required />
@@ -127,13 +127,13 @@ export function UsersPage() {
                 <select
                   value={form.role}
                   onChange={(e) => setForm((current) => ({ ...current, role: e.target.value as UserRole }))}
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-slate-100"
+                  className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-slate-800"
                 >
                   <option value="EMPLOYEE">EMPLOYEE</option>
                   <option value="ADMIN">ADMIN</option>
                 </select>
               </label>
-              <Button loading={submitting} leftIcon={<UserPlus className="h-4 w-4" />} className="w-full">Criar usuário</Button>
+              <Button loading={submitting} leftIcon={<UserPlus className="h-4 w-4" />} className="w-full lg:col-span-2">Criar usuário</Button>
             </form>
           </CardContent>
         </Card>

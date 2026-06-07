@@ -3,6 +3,7 @@ import { BarChart3, FilePlus2, Files, LogOut, Menu, Settings, Users, X } from 'l
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/Button';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { cn } from '../utils/cn';
 import { getInitials } from '../utils/format';
 
@@ -29,11 +30,11 @@ export function AppLayout() {
   }
 
   const sidebar = (
-    <aside className="flex h-full w-72 flex-col border-r border-slate-200 bg-white">
-      <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
+    <aside className="flex h-full w-72 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+      <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5 dark:border-slate-800">
         <div>
-          <p className="text-lg font-black tracking-tight text-slate-950">Multipost</p>
-          <p className="text-xs font-medium text-slate-500">Painel operacional</p>
+          <p className="text-lg font-black tracking-tight text-slate-950 dark:text-slate-50">Multipost</p>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Painel operacional</p>
         </div>
         <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Fechar menu">
           <X className="h-5 w-5" />
@@ -48,7 +49,7 @@ export function AppLayout() {
             onClick={() => setOpen(false)}
             className={({ isActive }) => cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
-              isActive ? 'bg-slate-950 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950',
+              isActive ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white',
             )}
           >
             <Icon className="h-4 w-4" />
@@ -57,31 +58,34 @@ export function AppLayout() {
         ))}
       </nav>
 
-      <div className="border-t border-slate-200 p-4">
-        <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+      <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+        <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white dark:bg-white dark:text-slate-950">
             {getInitials(user?.name, user?.email)}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-slate-950">{user?.name || 'Usuário'}</p>
-            <p className="truncate text-xs text-slate-500">{user?.email}</p>
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
           </div>
         </div>
-        <Button variant="secondary" className="w-full" leftIcon={<LogOut className="h-4 w-4" />} onClick={handleLogout}>
-          Sair
-        </Button>
+        <div className="flex gap-2">
+          <ThemeToggle />
+          <Button variant="secondary" className="flex-1" leftIcon={<LogOut className="h-4 w-4" />} onClick={handleLogout}>
+            Sair
+          </Button>
+        </div>
       </div>
     </aside>
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-950">
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
-        <button onClick={() => setOpen(true)} className="rounded-lg p-2 hover:bg-slate-100" aria-label="Abrir menu">
+    <div className="min-h-screen bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 dark:border-slate-800 dark:bg-slate-950 lg:hidden">
+        <button onClick={() => setOpen(true)} className="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-900" aria-label="Abrir menu">
           <Menu className="h-5 w-5" />
         </button>
         <p className="font-black">Multipost</p>
-        <div className="h-9 w-9 rounded-full bg-slate-950 text-white" />
+        <ThemeToggle />
       </header>
 
       <div className="flex min-h-screen">
@@ -89,7 +93,7 @@ export function AppLayout() {
 
         {open && (
           <div className="fixed inset-0 z-40 lg:hidden">
-            <button className="absolute inset-0 bg-slate-950/40" onClick={() => setOpen(false)} aria-label="Fechar overlay" />
+            <button className="absolute inset-0 bg-slate-950/50" onClick={() => setOpen(false)} aria-label="Fechar overlay" />
             <div className="relative h-full">{sidebar}</div>
           </div>
         )}

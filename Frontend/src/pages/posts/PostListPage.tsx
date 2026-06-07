@@ -6,7 +6,9 @@ import { Alert } from '../../components/Alert';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
 import { Card, CardContent, CardHeader } from '../../components/Card';
+import { EmptyState } from '../../components/EmptyState';
 import { Loading } from '../../components/Loading';
+import { SearchInput } from '../../components/SearchInput';
 import { Table, Td, Th } from '../../components/Table';
 import { useAsync } from '../../hooks/useAsync';
 import { formatDate } from '../../utils/format';
@@ -18,7 +20,16 @@ function getAuthor(post: Post) {
 
 export function PostListPage() {
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
   const { data, loading, error, refetch } = useAsync(() => postsApi.list(page, 20), [page]);
+  const filteredPosts = (data?.posts || []).filter((post) => {
+    const term = search.trim().toLowerCase();
+    if (!term) return true;
+
+    return [post.title, post.description, post.price]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(term));
+  });
 
   return (
     <div className="space-y-5">
@@ -32,13 +43,18 @@ export function PostListPage() {
         </Link>
       </div>
 
-      <Card>
-        <CardHeader className="flex items-center justify-between gap-3">
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
           <div>
             <h2 className="font-bold text-slate-950">Lista de posts</h2>
             <p className="text-sm text-slate-500">{data?.total ?? 0} registros encontrados</p>
           </div>
-          <Button variant="secondary" onClick={refetch}>Atualizar</Button>
+          <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+            <div className="sm:min-w-80">
+              <SearchInput value={search} onChange={setSearch} placeholder="Pesquisar posts" />
+            </div>
+            <Button variant="secondary" onClick={refetch}>Atualizar</Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading && <Loading />}
@@ -57,8 +73,8 @@ export function PostListPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.posts.map((post) => (
-                    <tr key={post.id} className="hover:bg-slate-50">
+                  {filteredPosts.map((post) => (
+                    <tr key={post.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
                       <Td className="font-semibold text-slate-950">{post.title}</Td>
                       <Td>{getAuthor(post)?.name || getAuthor(post)?.email || '-'}</Td>
                       <Td><Badge>{post.status || 'PENDING'}</Badge></Td>
@@ -80,7 +96,8 @@ export function PostListPage() {
                 </tbody>
               </Table>
 
-              {data.posts.length === 0 && <div className="p-8 text-center text-sm text-slate-500">Nenhum post encontrado.</div>}
+              {data.posts.length === 0 && <EmptyState message="Nenhum post encontrado." />}
+              {data.posts.length > 0 && filteredPosts.length === 0 && <EmptyState message="Nenhum post encontrado." />}
 
               <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4">
                 <p className="text-sm text-slate-500">Página {data.page} de {data.pages || 1}</p>

@@ -11,6 +11,8 @@ import { formatDate } from '../../utils/format';
 
 export function AdminDashboardPage() {
   const { data, loading, error } = useAsync(() => adminApi.dashboard(), []);
+  const visibleRanking = data?.ranking.slice(0, 5) || [];
+  const visibleRecentPosts = data?.recentPosts.slice(0, 5) || [];
 
   return (
     <div className="space-y-5">
@@ -39,23 +41,19 @@ export function AdminDashboardPage() {
                   <thead>
                     <tr>
                       <Th>Funcionário</Th>
-                      <Th>Email</Th>
                       <Th>Posts no mes</Th>
-                      <Th>Total</Th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.ranking.map((item, index) => (
+                    {visibleRanking.map((item, index) => (
                       <tr key={item.userId || item.id || `${item.name}-${index}`}>
                         <Td className="font-semibold text-slate-950">{item.name}</Td>
-                        <Td>{item.email || '-'}</Td>
                         <Td>{item.monthPosts ?? 0}</Td>
-                        <Td>{item.totalPosts ?? item.postsCount ?? 0}</Td>
                       </tr>
                     ))}
                   </tbody>
                 </Table>
-                {data.ranking.length === 0 && <div className="p-6 text-center text-sm text-slate-500">Sem dados de ranking.</div>}
+                {visibleRanking.length === 0 && <div className="p-6 text-center text-sm text-slate-500">Sem dados de ranking.</div>}
               </CardContent>
             </Card>
 
@@ -73,7 +71,7 @@ export function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.recentPosts.map((post) => (
+                    {visibleRecentPosts.map((post) => (
                       <tr key={post.id}>
                         <Td className="font-semibold text-slate-950">{post.title}</Td>
                         <Td><Badge>{post.status || 'PENDING'}</Badge></Td>
@@ -82,7 +80,7 @@ export function AdminDashboardPage() {
                     ))}
                   </tbody>
                 </Table>
-                {data.recentPosts.length === 0 && <div className="p-6 text-center text-sm text-slate-500">Sem posts recentes.</div>}
+                {visibleRecentPosts.length === 0 && <div className="p-6 text-center text-sm text-slate-500">Sem posts recentes.</div>}
               </CardContent>
             </Card>
           </div>

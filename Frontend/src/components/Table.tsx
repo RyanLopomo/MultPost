@@ -6,9 +6,9 @@ export function Table({ children, className }: { children: ReactNode; className?
 }
 
 export function Th({ children }: { children: ReactNode }) {
-  return <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">{children}</th>;
+  return <th className="border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">{children}</th>;
 }
 
 export function Td({ children, className }: { children: ReactNode; className?: string }) {
-  return <td className={cn('border-b border-slate-100 px-4 py-3 align-middle text-slate-700', className)}>{children}</td>;
+  return <td className={cn('border-b border-slate-100 px-4 py-3 align-middle text-slate-700 dark:border-slate-800 dark:text-slate-300', className)}>{children}</td>;
 }

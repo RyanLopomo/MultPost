@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { ExternalLink, ImagePlus, Lightbulb, Plus, Send, Trash2, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, ExternalLink, ImagePlus, Link2, MessageCircle, Package, Pencil, Plus, Send, Trash2, X } from 'lucide-react';
 import { postsApi } from '../../api/posts';
 import { Alert } from '../../components/Alert';
 import { Badge } from '../../components/Badge';
@@ -10,21 +10,11 @@ import { Textarea } from '../../components/Textarea';
 import type { Channel, CreatePostPayload, CreatePostResponse } from '../../types/post';
 
 const channelOptions: Channel[] = ['TELEGRAM', 'WHATSAPP'];
-const suggestionStyles = [
-  {
-    description: () => 'APLICAR NA FINALIZACAO',
-  },
-  {
-    description: () => 'CUPOM DISPONIVEL + Moedas',
-  },
-  {
-    description: () => 'OFERTA RELAMPAGO',
-  },
-  {
-    description: () => 'SEM CUPOM',
-  },
-];
 const presetStorageKey = 'multipost:post-presets';
+const normalizedDefaultPresets = [
+  '\uD83C\uDDE7\uD83C\uDDF7 PRODUTO JA NO BRASIL\n(ENVIO RAPIDO E SEM TAXA)',
+  '\uD83D\uDE9BPRODUTO JA NO BRASIL\n(ENVIO RAPIDO E SEM TAXA)',
+];
 const defaultPresets = [
   '🇧🇷 PRODUTO JÁ NO BRASIL\n(ENVIO RÁPIDO E SEM TAXA)',
   '🚛PRODUTO JÁ NO BRASIL\n(ENVIO RAPIDO E SEM TAXA)',
@@ -82,6 +72,21 @@ function isValidUrl(value: string) {
   }
 }
 
+function getPresetTitle(preset: string) {
+  return preset.split('\n').find(Boolean) || 'Preset';
+}
+
+function SectionHeader({ icon: Icon, title }: { icon: typeof Package; title: string }) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white">
+        <Icon className="h-4 w-4" />
+      </span>
+      <h3 className="text-sm font-black uppercase tracking-wide text-slate-900">{title}</h3>
+    </div>
+  );
+}
+
 export function CreatePostPage() {
   const [form, setForm] = useState<CreatePostPayload>({
     title: '',
@@ -98,13 +103,29 @@ export function CreatePostPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [result, setResult] = useState<CreatePostResponse | null>(null);
-  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [whatsappHint, setWhatsappHint] = useState<string | null>(null);
-  const [presets, setPresets] = useState<string[]>(defaultPresets);
-  const [presetDraft, setPresetDraft] = useState(defaultPresets[0]);
+  const [presets, setPresets] = useState<string[]>(normalizedDefaultPresets);
+  const [presetDraft, setPresetDraft] = useState(normalizedDefaultPresets[0]);
 
   const selectedChannels = useMemo(() => new Set(form.channels), [form.channels]);
   const imagePreviewUrl = useMemo(() => (form.image ? URL.createObjectURL(form.image) : null), [form.image]);
+  const previewText = useMemo(() => {
+    const groupLink = selectedChannels.has('WHATSAPP')
+      ? form.telegramInviteLink || 'https://t.me/grupo'
+      : form.whatsappInviteLink || 'https://chat.whatsapp.com/grupo';
+    const lines = [
+      form.title ? `💥${form.title}` : '💥Produto',
+      '',
+      form.price ? `💵VALOR : ${form.price}` : '💵VALOR : -',
+      form.description ? `🎟️CUPOM : ${form.description}` : '🎟️CUPOM : -',
+      form.link || 'https://link-do-produto',
+    ];
+
+    if (form.presetText) lines.push(form.presetText);
+    lines.push('', '⚡️GRUPO de OFERTAS', groupLink);
+
+    return lines.join('\n');
+  }, [form.description, form.link, form.presetText, form.price, form.telegramInviteLink, form.title, form.whatsappInviteLink, selectedChannels]);
 
   useEffect(() => {
     return () => {
@@ -158,17 +179,6 @@ export function CreatePostPage() {
   function updateImage(file: File | null) {
     setErrors((current) => ({ ...current, image: undefined }));
     update('image', file);
-  }
-
-  function generateSuggestion() {
-    const style = suggestionStyles[suggestionIndex % suggestionStyles.length];
-
-    setForm((current) => ({
-      ...current,
-      description: style.description(),
-    }));
-    setSuggestionIndex((current) => current + 1);
-    setErrors((current) => ({ ...current, description: undefined }));
   }
 
   function savePreset() {
@@ -266,102 +276,55 @@ export function CreatePostPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-slate-950">Criar post</h1>
-        <p className="text-sm text-slate-500">Preencha a oferta e escolha os canais de publicacao.</p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-soft sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Editor de oferta</p>
+          <h1 className="text-2xl font-black tracking-tight text-slate-950">Criar post</h1>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">
+            <MessageCircle className="h-4 w-4" />
+            {form.channels.length} canal{form.channels.length === 1 ? '' : 's'}
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700">
+            <ClipboardList className="h-4 w-4" />
+            {form.presetText ? 'Preset ativo' : 'Sem preset'}
+          </span>
+        </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-        <Card>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Card className="overflow-hidden">
           <CardHeader>
             <h2 className="font-bold text-slate-950">Dados do post</h2>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               {apiError && <Alert variant="error" message={apiError} />}
-              <Input label="Titulo" value={form.title} onChange={(e) => update('title', e.target.value)} maxLength={200} error={errors.title} required />
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Sugestoes de cupom</p>
-                    <p className="text-xs text-slate-500">Gere uma sugestao de cupom/complemento para o produto.</p>
+              <section className="rounded-xl border border-slate-200 bg-white p-4">
+                <SectionHeader icon={Package} title="Oferta" />
+                <div className="space-y-4">
+                  <Input label="Titulo" value={form.title} onChange={(e) => update('title', e.target.value)} maxLength={200} error={errors.title} required />
+                  <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+                    <Input label="Preco" value={form.price} onChange={(e) => update('price', e.target.value)} placeholder="R$ 299,90" />
+                    <Input label="Link" value={form.link} onChange={(e) => update('link', e.target.value)} placeholder="https://loja.com/produto" error={errors.link} />
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    leftIcon={<Lightbulb className="h-4 w-4" />}
-                    onClick={generateSuggestion}
-                  >
-                    Sugerir
-                  </Button>
+                  <Textarea
+                    label="Cupom e complemento"
+                    value={form.description}
+                    onChange={(e) => update('description', e.target.value)}
+                    maxLength={1000}
+                    error={errors.description}
+                    placeholder="AEBR1 + Moedas"
+                    className="min-h-20"
+                  />
                 </div>
-              </div>
-              <Textarea
-                label="Cupom e complemento"
-                value={form.description}
-                onChange={(e) => update('description', e.target.value)}
-                maxLength={1000}
-                error={errors.description}
-                placeholder="AEBR1 + Moedas"
-              />
-              <Input label="Preco" value={form.price} onChange={(e) => update('price', e.target.value)} placeholder="R$ 299,90" />
-              <Input label="Link" value={form.link} onChange={(e) => update('link', e.target.value)} placeholder="https://loja.com/produto" error={errors.link} />
+              </section>
 
-              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="flex-1">
-                    <Textarea
-                      label="Preset abaixo do link"
-                      value={presetDraft}
-                      onChange={(event) => setPresetDraft(event.target.value)}
-                      maxLength={500}
-                      placeholder="🇧🇷 PRODUTO JÁ NO BRASIL&#10;(ENVIO RÁPIDO E SEM TAXA)"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    leftIcon={<Plus className="h-4 w-4" />}
-                    onClick={savePreset}
-                    className="shrink-0"
-                  >
-                    Salvar preset
-                  </Button>
-                </div>
-
-                {presets.length > 0 && (
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {presets.map((preset) => {
-                      const active = form.presetText === preset;
-                      return (
-                        <div key={preset} className={`flex items-start gap-2 rounded-lg border bg-white p-2 ${active ? 'border-slate-950' : 'border-slate-200'}`}>
-                          <button
-                            type="button"
-                            className="min-h-12 flex-1 whitespace-pre-wrap text-left text-xs font-semibold text-slate-700"
-                            onClick={() => update('presetText', active ? '' : preset)}
-                          >
-                            {preset}
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"
-                            onClick={() => removePreset(preset)}
-                            aria-label="Remover preset"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {errors.presetText && <p className="text-xs font-medium text-rose-600">{errors.presetText}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Imagem do post</span>
-                <label className="flex min-h-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
+              <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                <SectionHeader icon={ImagePlus} title="Midia" />
+                <label className="flex min-h-32 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
                   <input
                     className="sr-only"
                     type="file"
@@ -369,10 +332,10 @@ export function CreatePostPage() {
                     onChange={(event) => updateImage(event.target.files?.[0] ?? null)}
                   />
                   {imagePreviewUrl ? (
-                    <img src={imagePreviewUrl} alt="Preview da imagem do post" className="h-56 w-full object-contain bg-white" />
+                    <img src={imagePreviewUrl} alt="Preview da imagem do post" className="h-64 w-full object-contain bg-white" />
                   ) : (
-                    <span className="flex items-center gap-2 px-4 py-5">
-                      <ImagePlus className="h-4 w-4" />
+                    <span className="flex items-center gap-2 px-4 py-8">
+                      <ImagePlus className="h-5 w-5" />
                       Selecionar imagem
                     </span>
                   )}
@@ -391,54 +354,58 @@ export function CreatePostPage() {
                   </div>
                 )}
                 {errors.image && <p className="text-xs font-medium text-rose-600">{errors.image}</p>}
-              </div>
+              </section>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  label="Convite Telegram"
-                  value={form.telegramInviteLink}
-                  onChange={(e) => update('telegramInviteLink', e.target.value)}
-                  placeholder="https://t.me/+codigo"
-                  error={errors.telegramInviteLink}
-                />
-                <Input
-                  label="Convite WhatsApp"
-                  value={form.whatsappInviteLink}
-                  onChange={(e) => update('whatsappInviteLink', e.target.value)}
-                  placeholder="https://chat.whatsapp.com/codigo"
-                  error={errors.whatsappInviteLink}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700">Canais</p>
+              <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+                <SectionHeader icon={Link2} title="Canais e convites" />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Input
+                    label="Convite Telegram"
+                    value={form.telegramInviteLink}
+                    onChange={(e) => update('telegramInviteLink', e.target.value)}
+                    placeholder="https://t.me/+codigo"
+                    error={errors.telegramInviteLink}
+                  />
+                  <Input
+                    label="Convite WhatsApp"
+                    value={form.whatsappInviteLink}
+                    onChange={(e) => update('whatsappInviteLink', e.target.value)}
+                    placeholder="https://chat.whatsapp.com/codigo"
+                    error={errors.whatsappInviteLink}
+                  />
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {channelOptions.map((channel) => (
                     <button
                       type="button"
                       key={channel}
                       onClick={() => toggleChannel(channel)}
-                      className={`rounded-xl border p-4 text-left transition ${selectedChannels.has(channel) ? 'border-slate-950 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                      className={`rounded-xl border p-4 text-left transition ${selectedChannels.has(channel) ? 'border-slate-950 bg-slate-950 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                     >
-                      <p className="font-bold">{channel}</p>
-                      <p className="text-xs opacity-70">Publicar neste canal</p>
+                      <p className="flex items-center gap-2 font-bold">
+                        {selectedChannels.has(channel) && <CheckCircle2 className="h-4 w-4" />}
+                        {channel}
+                      </p>
                     </button>
                   ))}
                 </div>
                 {errors.channels && <p className="text-xs font-medium text-rose-600">{errors.channels}</p>}
-              </div>
+              </section>
 
               <Button loading={loading} leftIcon={<Send className="h-4 w-4" />}>Publicar post</Button>
             </form>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="h-fit overflow-hidden xl:sticky xl:top-8">
           <CardHeader>
-            <h2 className="font-bold text-slate-950">Resultado</h2>
+            <h2 className="font-bold text-slate-950">Preview e resultado</h2>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!result && <p className="text-sm text-slate-500">O resultado da publicacao aparecera aqui.</p>}
+            <div className="rounded-xl border border-slate-200 bg-slate-950 p-4 text-white">
+              <pre className="max-h-80 whitespace-pre-wrap break-words text-sm leading-relaxed">{previewText}</pre>
+            </div>
+            {!result && <p className="text-sm text-slate-500">A publicacao aparecera aqui apos o envio.</p>}
             {result && (
               <>
                 <Alert variant="success" message="Post criado com sucesso." />
@@ -461,6 +428,80 @@ export function CreatePostPage() {
                 )}
               </>
             )}
+
+            <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <SectionHeader icon={ClipboardList} title="Presets" />
+              <Textarea
+                label="Criar ou editar preset"
+                value={presetDraft}
+                onChange={(event) => setPresetDraft(event.target.value)}
+                maxLength={500}
+                placeholder={'\uD83C\uDDE7\uD83C\uDDF7 PRODUTO JA NO BRASIL\n(ENVIO RAPIDO E SEM TAXA)'}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                leftIcon={<Plus className="h-4 w-4" />}
+                onClick={savePreset}
+                className="w-full"
+              >
+                Salvar preset
+              </Button>
+
+              {presets.length > 0 && (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${!form.presetText ? 'border-slate-950 bg-slate-950 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'}`}
+                    onClick={() => update('presetText', '')}
+                  >
+                    Sem preset
+                  </button>
+
+                  <div className="grid gap-2">
+                    {presets.map((preset) => {
+                      const active = form.presetText === preset;
+                      return (
+                        <div key={preset} className={`rounded-lg border bg-white p-3 shadow-sm transition ${active ? 'border-slate-950 ring-2 ring-slate-200' : 'border-slate-200 hover:border-slate-300'}`}>
+                          <button
+                            type="button"
+                            className="w-full text-left"
+                            onClick={() => update('presetText', preset)}
+                          >
+                            <span className={`mb-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold ${active ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                              {active && <CheckCircle2 className="h-3 w-3" />}
+                              {active ? 'Selecionado' : 'Usar'}
+                            </span>
+                            <span className="block text-xs font-bold text-slate-400">{getPresetTitle(preset)}</span>
+                            <span className="mt-1 block whitespace-pre-wrap text-xs font-semibold text-slate-700">{preset}</span>
+                          </button>
+
+                          <div className="mt-2 flex justify-end gap-1">
+                            <button
+                              type="button"
+                              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                              onClick={() => setPresetDraft(preset)}
+                              aria-label="Editar preset"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-rose-600"
+                              onClick={() => removePreset(preset)}
+                              aria-label="Remover preset"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {errors.presetText && <p className="text-xs font-medium text-rose-600">{errors.presetText}</p>}
+            </section>
           </CardContent>
         </Card>
       </div>
