@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { ExternalLink, ImagePlus, Lightbulb, Send, X } from 'lucide-react';
 import { postsApi } from '../../api/posts';
 import { Alert } from '../../components/Alert';
@@ -12,28 +12,61 @@ import type { Channel, CreatePostPayload, CreatePostResponse } from '../../types
 const channelOptions: Channel[] = ['TELEGRAM', 'WHATSAPP'];
 const suggestionStyles = [
   {
-    description: (title: string, price: string, oldPrice: string) =>
-      `${title} com oferta especial${price ? ` por ${price}` : ''}${oldPrice ? `, antes ${oldPrice}` : ''}. Uma boa opcao para aproveitar hoje, com estoque sujeito a disponibilidade.`,
-    tags: ['oferta', 'promocao', 'desconto', 'achadinho'],
+    description: () => 'APLICAR NA FINALIZACAO',
   },
   {
-    description: (title: string, price: string) =>
-      `Olha essa oportunidade: ${title}${price ? ` saindo por ${price}` : ''}. Produto selecionado para quem quer comprar bem e pagar menos.`,
-    tags: ['imperdivel', 'preco_baixo', 'cupom', 'compras'],
+    description: () => 'CUPOM DISPONIVEL + Moedas',
   },
   {
-    description: (title: string, price: string) =>
-      `${title} em destaque${price ? ` com preco de ${price}` : ''}. Confira os detalhes no link e garanta antes que a oferta acabe.`,
-    tags: ['promocao_do_dia', 'oferta_online', 'produto_em_destaque', 'economia'],
+    description: () => 'OFERTA RELAMPAGO',
   },
   {
-    description: (title: string, price: string, oldPrice: string) =>
-      `Oferta encontrada para ${title}.${oldPrice && price ? ` De ${oldPrice} por ${price}.` : price ? ` Valor atual: ${price}.` : ''} Ideal para compartilhar com quem gosta de economizar.`,
-    tags: ['achados', 'descontos', 'preco_especial', 'compartilhe'],
+    description: () => 'SEM CUPOM',
   },
 ];
 
 type Errors = Partial<Record<keyof CreatePostPayload, string>>;
+
+async function imageFileToPngBlob(file: File): Promise<Blob> {
+  const sourceUrl = URL.createObjectURL(file);
+
+  try {
+    const image = new Image();
+    image.src = sourceUrl;
+    await image.decode();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas indisponivel');
+
+    context.drawImage(image, 0, 0);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Nao foi possivel converter a imagem'));
+      }, 'image/png');
+    });
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+async function copyImageToClipboard(file: File): Promise<void> {
+  if (!navigator.clipboard?.write || !('ClipboardItem' in window)) {
+    throw new Error('Clipboard de imagem indisponivel neste navegador');
+  }
+
+  const pngBlob = await imageFileToPngBlob(file);
+  await navigator.clipboard.write([
+    new ClipboardItem({
+      'image/png': pngBlob,
+    }),
+  ]);
+}
 
 function isValidUrl(value: string) {
   try {
@@ -44,32 +77,12 @@ function isValidUrl(value: string) {
   }
 }
 
-function normalizeTag(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9\s_-]/g, '')
-    .trim()
-    .replace(/\s+/g, '_')
-    .toLowerCase();
-}
-
-function buildProductTags(title: string) {
-  return title
-    .split(/\s+/)
-    .map(normalizeTag)
-    .filter((tag) => tag.length >= 4)
-    .slice(0, 3);
-}
-
 export function CreatePostPage() {
   const [form, setForm] = useState<CreatePostPayload>({
     title: '',
     description: '',
     price: '',
-    oldPrice: '',
     link: '',
-    tags: '',
     image: null,
     telegramInviteLink: '',
     whatsappInviteLink: '',
@@ -80,8 +93,29 @@ export function CreatePostPage() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [result, setResult] = useState<CreatePostResponse | null>(null);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [whatsappHint, setWhatsappHint] = useState<string | null>(null);
 
   const selectedChannels = useMemo(() => new Set(form.channels), [form.channels]);
+  const imagePreviewUrl = useMemo(() => (form.image ? URL.createObjectURL(form.image) : null), [form.image]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
+
+  useEffect(() => {
+    function handlePaste(event: ClipboardEvent) {
+      const pastedImage = Array.from(event.clipboardData?.files || []).find((file) => file.type.startsWith('image/'));
+      if (pastedImage) {
+        event.preventDefault();
+        updateImage(pastedImage);
+      }
+    }
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
 
   function update<K extends keyof CreatePostPayload>(field: K, value: CreatePostPayload[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -100,19 +134,14 @@ export function CreatePostPage() {
   }
 
   function generateSuggestion() {
-    const title = form.title.trim() || 'Produto selecionado';
-    const price = form.price?.trim() || '';
-    const oldPrice = form.oldPrice?.trim() || '';
     const style = suggestionStyles[suggestionIndex % suggestionStyles.length];
-    const tags = Array.from(new Set([...style.tags, ...buildProductTags(title)]));
 
     setForm((current) => ({
       ...current,
-      description: style.description(title, price, oldPrice),
-      tags: tags.join(', '),
+      description: style.description(),
     }));
     setSuggestionIndex((current) => current + 1);
-    setErrors((current) => ({ ...current, description: undefined, tags: undefined }));
+    setErrors((current) => ({ ...current, description: undefined }));
   }
 
   function validate() {
@@ -153,9 +182,7 @@ export function CreatePostPage() {
         title: form.title.trim(),
         description: form.description?.trim() || undefined,
         price: form.price?.trim() || undefined,
-        oldPrice: form.oldPrice?.trim() || undefined,
         link: form.link?.trim() || undefined,
-        tags: form.tags?.trim() || undefined,
         image: form.image || undefined,
         telegramInviteLink: form.telegramInviteLink?.trim() || undefined,
         whatsappInviteLink: form.whatsappInviteLink?.trim() || undefined,
@@ -163,11 +190,34 @@ export function CreatePostPage() {
       };
       const response = await postsApi.create(payload);
       setResult(response);
+      setWhatsappHint(null);
     } catch (err) {
       setApiError(err instanceof Error ? err.message : 'Erro ao criar post');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleOpenWhatsApp() {
+    if (!result?.whatsappLink) return;
+
+    let copiedImage = false;
+
+    if (form.image) {
+      try {
+        await copyImageToClipboard(form.image);
+        copiedImage = true;
+      } catch {
+        copiedImage = false;
+      }
+    }
+
+    window.open(result.whatsappLink, '_blank', 'noopener,noreferrer');
+    setWhatsappHint(
+      copiedImage
+        ? 'Imagem copiada. No WhatsApp, pressione Ctrl + V para anexar antes de enviar.'
+        : 'WhatsApp aberto com o texto. Se quiser imagem, cole ou anexe manualmente no WhatsApp.'
+    );
   }
 
   return (
@@ -189,8 +239,8 @@ export function CreatePostPage() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">Sugestoes de texto</p>
-                    <p className="text-xs text-slate-500">Gere uma descricao e tags a partir do produto.</p>
+                    <p className="text-sm font-semibold text-slate-900">Sugestoes de cupom</p>
+                    <p className="text-xs text-slate-500">Gere uma sugestao de cupom/complemento para o produto.</p>
                   </div>
                   <Button
                     type="button"
@@ -202,27 +252,34 @@ export function CreatePostPage() {
                   </Button>
                 </div>
               </div>
-              <Textarea label="Descricao" value={form.description} onChange={(e) => update('description', e.target.value)} maxLength={1000} error={errors.description} />
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input label="Preco" value={form.price} onChange={(e) => update('price', e.target.value)} placeholder="R$ 299,90" />
-                <Input label="Preco antigo" value={form.oldPrice} onChange={(e) => update('oldPrice', e.target.value)} placeholder="R$ 399,90" />
-              </div>
+              <Textarea
+                label="Cupom e complemento"
+                value={form.description}
+                onChange={(e) => update('description', e.target.value)}
+                maxLength={1000}
+                error={errors.description}
+                placeholder="AEBR1 + Moedas"
+              />
+              <Input label="Preco" value={form.price} onChange={(e) => update('price', e.target.value)} placeholder="R$ 299,90" />
               <Input label="Link" value={form.link} onChange={(e) => update('link', e.target.value)} placeholder="https://loja.com/produto" error={errors.link} />
-              <Input label="Tags" value={form.tags} onChange={(e) => update('tags', e.target.value)} placeholder="promocao, tenis, nike" />
 
               <div className="space-y-2">
                 <span className="text-sm font-medium text-slate-700">Imagem do post</span>
-                <label className="flex min-h-24 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
+                <label className="flex min-h-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-600 transition hover:border-slate-400 hover:bg-white">
                   <input
                     className="sr-only"
                     type="file"
                     accept="image/*"
                     onChange={(event) => updateImage(event.target.files?.[0] ?? null)}
                   />
-                  <span className="flex items-center gap-2">
-                    <ImagePlus className="h-4 w-4" />
-                    Selecionar imagem
-                  </span>
+                  {imagePreviewUrl ? (
+                    <img src={imagePreviewUrl} alt="Preview da imagem do post" className="h-56 w-full object-contain bg-white" />
+                  ) : (
+                    <span className="flex items-center gap-2 px-4 py-5">
+                      <ImagePlus className="h-4 w-4" />
+                      Selecionar imagem
+                    </span>
+                  )}
                 </label>
                 {form.image && (
                   <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
@@ -300,10 +357,11 @@ export function CreatePostPage() {
                     </div>
                   ))}
                 </div>
+                {whatsappHint && <Alert variant="info" message={whatsappHint} />}
                 {result.whatsappLink && (
-                  <a href={result.whatsappLink} target="_blank" rel="noreferrer">
-                    <Button className="w-full" leftIcon={<ExternalLink className="h-4 w-4" />}>Abrir WhatsApp</Button>
-                  </a>
+                  <Button type="button" className="w-full" leftIcon={<ExternalLink className="h-4 w-4" />} onClick={handleOpenWhatsApp}>
+                    Abrir WhatsApp
+                  </Button>
                 )}
               </>
             )}

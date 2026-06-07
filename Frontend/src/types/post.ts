@@ -42,9 +42,7 @@ export type CreatePostPayload = {
   title: string;
   description?: string;
   price?: string;
-  oldPrice?: string;
   link?: string;
-  tags?: string;
   image?: File | null;
   telegramInviteLink?: string;
   whatsappInviteLink?: string;

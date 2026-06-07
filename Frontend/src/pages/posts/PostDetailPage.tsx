@@ -42,11 +42,9 @@ export function PostDetailPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <Info label="Autor" value={post.author?.name || post.user?.name || '-'} />
                 <Info label="Preço" value={post.price || '-'} />
-                <Info label="Preço antigo" value={post.oldPrice || '-'} />
-                <Info label="Tags" value={post.tags || '-'} />
               </div>
               <div>
-                <p className="mb-1 text-sm font-bold text-slate-700">Descrição</p>
+                <p className="mb-1 text-sm font-bold text-slate-700">Cupom e complemento</p>
                 <p className="whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-sm text-slate-700">{post.description || '-'}</p>
               </div>
               {post.link && (

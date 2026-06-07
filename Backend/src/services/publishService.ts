@@ -82,6 +82,11 @@ async function prepareWhatsApp(post: Post, text: string): Promise<PublishResult>
   try {
     const waLink = buildWhatsAppLink(text);
 
+    if (process.env.DEBUG_WHATSAPP_TEXT === "true") {
+      logger.info("Texto WhatsApp original", { postId: post.id, text });
+      logger.info("Texto WhatsApp encoded", { postId: post.id, text: encodeURIComponent(text) });
+    }
+
     await prisma.publishing.create({
       data: { postId: post.id, channel: "WHATSAPP", status: "SUCCESS", messageId: waLink },
     });

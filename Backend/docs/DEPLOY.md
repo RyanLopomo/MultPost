@@ -45,10 +45,14 @@ JWT_SECRET=uma_string_longa_segura
 JWT_EXPIRES_IN=8h
 NODE_ENV=production
 PORT=3333
+DEBUG_WHATSAPP_TEXT=false
 CORS_ORIGIN=https://seu-frontend.vercel.app
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 ```
+
+Use `DEBUG_WHATSAPP_TEXT=true` apenas para diagnostico. Ele registra o texto
+original e o texto codificado antes de gerar o link do WhatsApp.
 
 O backend tambem aceita automaticamente os dominios Vercel deste projeto:
 

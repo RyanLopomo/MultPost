@@ -5,15 +5,10 @@ interface AdaptedPost {
   whatsapp: string;
 }
 
-function formatTags(raw: string | null): string {
-  if (!raw) return "";
-  return raw
-    .split(",")
-    .map((t) => "#" + t.trim().replace(/\s+/g, "_"))
-    .filter(Boolean)
-    .join(" ");
-}
-
+const ICON_PRODUCT = "\uD83D\uDCA5";
+const ICON_PRICE = "\uD83D\uDCB5";
+const ICON_COUPON = "\uD83C\uDF9F\uFE0F";
+const ICON_GROUP = "\u26A1\uFE0F";
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -22,58 +17,44 @@ function escapeHtml(value: string): string {
 }
 
 export function adaptPost(post: Post, inviteLinks: InviteLinks = {}): AdaptedPost {
-  const tags = formatTags(post.tags);
-
-  const telegram = buildTelegram(post, tags, inviteLinks.whatsapp);
-  const whatsapp = buildWhatsApp(post, tags, inviteLinks.telegram);
+  const telegram = buildTelegram(post, inviteLinks.whatsapp);
+  const whatsapp = buildWhatsApp(post, inviteLinks.telegram);
 
   return { telegram, whatsapp };
 }
 
-function buildTelegram(post: Post, tags: string, whatsappInviteLink?: string): string {
+function buildTelegram(post: Post, whatsappInviteLink?: string): string {
+  const offerLines: string[] = [];
   const parts: string[] = [];
 
-  if (post.title) parts.push(`<b>${escapeHtml(post.title)}</b>`);
-  if (post.description) parts.push(escapeHtml(post.description));
-
-  if (post.price) {
-    const priceStr = post.oldPrice
-      ? `💰 <b>${escapeHtml(post.price)}</b>  <s>${escapeHtml(post.oldPrice)}</s>`
-      : `💰 <b>${escapeHtml(post.price)}</b>`;
-    parts.push(priceStr);
-  }
-
-  if (post.link) parts.push(`\n${escapeHtml(post.link)}`);
+  if (post.title) parts.push(`${ICON_PRODUCT}<b>${escapeHtml(post.title)}</b>`);
+  if (post.price) offerLines.push(`${ICON_PRICE}<b>VALOR : ${escapeHtml(post.price)}</b>`);
+  if (post.description) offerLines.push(`${ICON_COUPON}<b>CUPOM : ${escapeHtml(post.description)}</b>`);
+  if (post.link) offerLines.push(escapeHtml(post.link));
+  if (offerLines.length) parts.push(offerLines.join("\n"));
   if (whatsappInviteLink) {
-    parts.push(`Entre no nosso grupo do WhatsApp:\n${escapeHtml(whatsappInviteLink)}`);
+    parts.push(`${ICON_GROUP}<b>GRUPO de OFERTAS</b>\n${escapeHtml(whatsappInviteLink)}`);
   }
-  if (tags) parts.push(escapeHtml(tags));
 
   return parts.join("\n\n").trim();
 }
 
-function buildWhatsApp(post: Post, tags: string, telegramInviteLink?: string): string {
+function buildWhatsApp(post: Post, telegramInviteLink?: string): string {
+  const offerLines: string[] = [];
   const parts: string[] = [];
 
-  if (post.title) parts.push(`*${post.title}*`);
-  if (post.description) parts.push(post.description);
-
-  if (post.price) {
-    const priceStr = post.oldPrice
-      ? `*Preço: ${post.price}* (de ${post.oldPrice})`
-      : `*Preço: ${post.price}*`;
-    parts.push(priceStr);
-  }
-
-  if (post.link) parts.push(`\n${post.link}`);
+  if (post.title) parts.push(`${ICON_PRODUCT}*${post.title}*`);
+  if (post.price) offerLines.push(`${ICON_PRICE}*VALOR : ${post.price}*`);
+  if (post.description) offerLines.push(`${ICON_COUPON}*CUPOM : ${post.description}*`);
+  if (post.link) offerLines.push(post.link);
+  if (offerLines.length) parts.push(offerLines.join("\n"));
   if (telegramInviteLink) {
-    parts.push(`Entre no nosso grupo do Telegram:\n${telegramInviteLink}`);
+    parts.push(`${ICON_GROUP}*GRUPO de OFERTAS*\n${telegramInviteLink}`);
   }
-  if (tags) parts.push(tags);
 
   return parts.join("\n\n").trim();
 }
 
 export function buildWhatsAppLink(text: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text.normalize("NFC"))}`;
 }
