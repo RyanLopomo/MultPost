@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ClipboardList, ExternalLink, ImagePlus, Link2, MessageCircle, Package, Pencil, Plus, Send, Trash2, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Copy, ExternalLink, ImagePlus, Link2, MessageCircle, Package, Pencil, Plus, Send, Trash2, X } from 'lucide-react';
 import { postsApi } from '../../api/posts';
 import { Alert } from '../../components/Alert';
 import { Badge } from '../../components/Badge';
@@ -104,6 +104,7 @@ export function CreatePostPage() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [result, setResult] = useState<CreatePostResponse | null>(null);
   const [whatsappHint, setWhatsappHint] = useState<string | null>(null);
+  const [copyHint, setCopyHint] = useState<string | null>(null);
   const [presets, setPresets] = useState<string[]>(normalizedDefaultPresets);
   const [presetDraft, setPresetDraft] = useState(normalizedDefaultPresets[0]);
 
@@ -275,6 +276,40 @@ export function CreatePostPage() {
     );
   }
 
+  async function handleCopyPreview() {
+    setCopyHint(null);
+
+    try {
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard indisponivel neste navegador');
+      }
+
+      if (form.image && navigator.clipboard.write && 'ClipboardItem' in window) {
+        const pngBlob = await imageFileToPngBlob(form.image);
+        const textBlob = new Blob([previewText], { type: 'text/plain' });
+
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': textBlob,
+            'image/png': pngBlob,
+          }),
+        ]);
+        setCopyHint('Preview copiado com imagem e texto.');
+        return;
+      }
+
+      await navigator.clipboard.writeText(previewText);
+      setCopyHint(form.image ? 'Texto copiado. A imagem nao pode ser copiada neste navegador.' : 'Preview copiado.');
+    } catch {
+      try {
+        await navigator.clipboard.writeText(previewText);
+        setCopyHint('Texto do preview copiado.');
+      } catch {
+        setCopyHint('Nao foi possivel copiar o preview automaticamente.');
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-soft sm:flex-row sm:items-center sm:justify-between">
@@ -405,6 +440,10 @@ export function CreatePostPage() {
             <div className="rounded-xl border border-slate-200 bg-slate-950 p-4 text-white">
               <pre className="max-h-80 whitespace-pre-wrap break-words text-sm leading-relaxed">{previewText}</pre>
             </div>
+            <Button type="button" variant="secondary" className="w-full" leftIcon={<Copy className="h-4 w-4" />} onClick={handleCopyPreview}>
+              Copiar preview
+            </Button>
+            {copyHint && <Alert variant="info" message={copyHint} />}
             {!result && <p className="text-sm text-slate-500">A publicacao aparecera aqui apos o envio.</p>}
             {result && (
               <>
